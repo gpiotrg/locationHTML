@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ważne: skalowanie dla urządzeń mobilnych -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Moja pozycja GPS</title>
+
+    <!-- Style Leaflet (CSS) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+        #map {
+            height: 100vh; /* Mapa zajmuje 100% wysokości ekranu */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <!-- Skrypt Leaflet (JS) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+    <script>
+        // 1. Inicjalizacja mapy (domyślnie ustawiona na Warszawę, zmieni się po pobraniu GPS)
+        var map = L.map('map').setView([52.237049, 21.017532], 13);
+
+        // 2. Dodanie warstwy z kafelkami mapy (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // 3. Pobranie lokalizacji
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+
+                // Ustawienie widoku mapy na użytkownika
+                map.setView([lat, lng], 16);
+
+                // Dodanie markera
+                var marker = L.marker([lat, lng]).addTo(map);
+                
+                // Dodanie dymka z informacją
+                marker.bindPopup("<b>Jesteś tutaj!</b>").openPopup();
+
+                // Opcjonalnie: dodanie okręgu precyzji
+                var circle = L.circle([lat, lng], {
+                    color: 'blue',
+                    fillColor: '#30f',
+                    fillOpacity: 0.2,
+                    radius: position.coords.accuracy
+                }).addTo(map);
+
+            }, function(error) {
+                // Obsługa błędów (np. użytkownik nie wyraził zgody)
+                console.error("Błąd lokalizacji:", error);
+                alert("Nie udało się pobrać lokalizacji. Sprawdź uprawnienia w przeglądarce.");
+            });
+        } else {
+            alert("Twoja przeglądarka nie obsługuje geolokalizacji.");
+        }
+    </script>
+
+</body>
+</html>
