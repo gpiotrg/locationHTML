@@ -2,9 +2,8 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <!-- Ważne: skalowanie dla urządzeń mobilnych -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Moja pozycja GPS</title>
+    <title>Mapa z GPS</title>
 
     <!-- Style Leaflet (CSS) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -18,12 +17,42 @@
             font-family: sans-serif;
         }
         #map {
-            height: 100vh; /* Mapa zajmuje 100% wysokości ekranu */
+            height: 100vh;
             width: 100%;
+            z-index: 1; /* Mapa jest pod spodem */
+        }
+
+        /* --- STYLE PRZYCISKU WSTECZ --- */
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000; /* Ważne: musi być wyższe niż mapa (która ma zwykle 400-500) */
+            background-color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .back-btn:active {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
+
+    <!-- PRZYCISK WSTECZ -->
+    <!-- onclick="history.back()" powoduje powrót do poprzedniej strony -->
+    <button class="back-btn" onclick="history.back()">
+        &#8592; Wstecz
+    </button>
 
     <div id="map"></div>
 
@@ -33,31 +62,52 @@
      crossorigin=""></script>
 
     <script>
-        // 1. Inicjalizacja mapy (domyślnie ustawiona na Warszawę, zmieni się po pobraniu GPS)
-        var map = L.map('map').setView([52.237049, 21.017532], 13);
-
-        // 2. Dodanie warstwy z kafelkami mapy (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 1. Definicja warstw map
+        // Warstwa 1: Standardowa (OpenStreetMap)
+        var mapStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
-        }).addTo(map);
+        });
 
-        // 3. Pobranie lokalizacji
+        // Warstwa 2: Satelitarna (Esri World Imagery - darmowy zbiór zdjęć)
+        var mapSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri'
+        });
+
+        // 2. Inicjalizacja mapy
+        // Dodajemy obie warstwy do obiektu baseMaps
+        var baseMaps = {
+            "Mapa": mapStandard,
+            "Satelita": mapSatellite
+        };
+
+        var map = L.map('map', {
+            center: [52.237049, 21.017532], // Startowo Warszawa
+            zoom: 13,
+            layers: [mapStandard] // Domyślnie włączona mapa standardowa
+        });
+
+        // 3. Dodanie kontrolki do przełączania warstw
+        // Leaflet automatycznie doda to w prawym górnym rogu
+        L.control.layers(baseMaps).addTo(map);
+
+        // 4. Pobranie lokalizacji (Geolocation)
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function(position) {
                 var lat = position.coords.latitude;
                 var lng = position.coords.longitude;
 
-                // Ustawienie widoku mapy na użytkownika
+                // Centrowanie mapy na użytkownika
                 map.setView([lat, lng], 16);
 
                 // Dodanie markera
                 var marker = L.marker([lat, lng]).addTo(map);
                 
-                // Dodanie dymka z informacją
+                // Dymek
                 marker.bindPopup("<b>Jesteś tutaj!</b>").openPopup();
 
-                // Opcjonalnie: dodanie okręgu precyzji
+                // Okrąg precyzji (niebieski obszar wokół markera)
                 var circle = L.circle([lat, lng], {
                     color: 'blue',
                     fillColor: '#30f',
@@ -66,12 +116,10 @@
                 }).addTo(map);
 
             }, function(error) {
-                // Obsługa błędów (np. użytkownik nie wyraził zgody)
-                console.error("Błąd lokalizacji:", error);
-                alert("Nie udało się pobrać lokalizacji. Sprawdź uprawnienia w przeglądarce.");
+                alert("Nie udało się pobrać lokalizacji. Sprawdź uprawnienia GPS w przeglądarce.");
             });
         } else {
-            alert("Twoja przeglądarka nie obsługuje geolokalizacji.");
+            alert("Geolokalizacja nie jest wspierana przez tę przeglądarkę.");
         }
     </script>
 
